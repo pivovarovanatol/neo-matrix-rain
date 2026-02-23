@@ -23,6 +23,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         saverView.startAnimation()
 
+        // display() internally calls lockFocus → draw → unlockFocus,
+        // which gives animateOneFrame a valid graphics context.
+        Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { [weak saverView] _ in
+            saverView?.display()
+        }
+
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             if event.charactersIgnoringModifiers == "q" { NSApp.terminate(nil) }
             return event

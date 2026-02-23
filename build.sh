@@ -31,8 +31,9 @@ echo "==> Copying resources..."
 ditto "$SCRIPT_DIR/Info.plist" "$SAVER_BUNDLE/Contents/Info.plist"
 
 echo "==> Signing..."
-# Strip any extended attributes the compiler left on the binary
+# Strip extended attributes the compiler leaves behind
 xattr -cr "$SAVER_BUNDLE"
+xattr -c  "$SAVER_BUNDLE/Contents/MacOS/$SAVER_NAME"
 codesign --force --sign - "$SAVER_BUNDLE/Contents/MacOS/$SAVER_NAME"
 codesign --force --sign - "$SAVER_BUNDLE"
 
