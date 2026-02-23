@@ -14,6 +14,8 @@ swiftc \
     -sdk "$SDK" \
     -framework ScreenSaver \
     -framework Cocoa \
+    "$SCRIPT_DIR/Sources/NeoMatrixConfig.swift" \
+    "$SCRIPT_DIR/Sources/NeoMatrixConfigSheet.swift" \
     "$SCRIPT_DIR/Sources/NeoMatrixView.swift" \
     "$SCRIPT_DIR/Sources/TestApp.swift" \
     "$SCRIPT_DIR/Sources/main.swift" \

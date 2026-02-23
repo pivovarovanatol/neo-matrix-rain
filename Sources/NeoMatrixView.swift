@@ -2,20 +2,9 @@ import ScreenSaver
 
 public class NeoMatrixView: ScreenSaverView {
 
-    // MARK: – Configuration
-    private let fontSize:     CGFloat = 22
-    private let trailLen:     Int     = 24
-    private let minSpeed:     Double  = 0.10
-    private let maxSpeed:     Double  = 0.35
-    private let flickerChance: Double = 0.01
-
-    // Katakana + Cyrillic + digits
-    private static let alphabet: [Character] = {
-        let kata     = (0x30A0...0x30FF).compactMap { Unicode.Scalar($0).map(Character.init) }
-        let cyrillic = (0x0400...0x04FF).compactMap { Unicode.Scalar($0).map(Character.init) }
-        let digits   = Array("0123456789")
-        return kata + cyrillic + digits
-    }()
+    // MARK: – Config
+    private var config = NeoMatrixConfig.load()
+    private var sheet:  NeoMatrixConfigSheet?
 
     // MARK: – Per-column state
     private struct Column {
@@ -27,10 +16,11 @@ public class NeoMatrixView: ScreenSaverView {
     }
     private var columns: [Column] = []
 
-    // MARK: – Pre-built drawing resources
-    private var monoFont:   NSFont!
-    private var headAttrs:  [NSAttributedString.Key: Any]!
-    private var trailAttrs: [[NSAttributedString.Key: Any]]!
+    // MARK: – Pre-built resources (rebuilt whenever config changes)
+    private var monoFont:   NSFont?
+    private var headAttrs:  [NSAttributedString.Key: Any] = [:]
+    private var trailAttrs: [[NSAttributedString.Key: Any]] = []
+    private var alphabet:   [Character] = []
 
     // MARK: – Init
     public override init?(frame: NSRect, isPreview: Bool) {
@@ -42,6 +32,13 @@ public class NeoMatrixView: ScreenSaverView {
         animationTimeInterval = 1.0 / 30.0
     }
 
+    // MARK: – Config reload (called by config sheet after OK)
+    func reloadConfig() {
+        config   = NeoMatrixConfig.load()
+        monoFont = nil  // triggers buildResources() next frame
+        columns  = []   // triggers resetColumns() next frame
+    }
+
     // MARK: – Lifecycle
     public override func startAnimation() {
         super.startAnimation()
@@ -50,46 +47,49 @@ public class NeoMatrixView: ScreenSaverView {
     }
 
     private func buildResources() {
-        monoFont = NSFont(name: "Courier New", size: fontSize)
-                   ?? NSFont.monospacedSystemFont(ofSize: fontSize, weight: .regular)
-
-        headAttrs = [.font: monoFont!, .foregroundColor: NSColor.white]
-
-        trailAttrs = (0..<trailLen).map { j in
-            let t = CGFloat(j) / CGFloat(trailLen - 1)
-            let g = 0.07 + t * 0.78
-            return [.font: monoFont!,
-                    .foregroundColor: NSColor(red: 0, green: g, blue: 0.02, alpha: 1)]
+        let sz   = CGFloat(config.fontSize)
+        let font = NSFont(name: "Courier New", size: sz)
+                   ?? NSFont.monospacedSystemFont(ofSize: sz, weight: .regular)
+        monoFont   = font
+        alphabet   = config.alphabet
+        headAttrs  = [.font: font, .foregroundColor: config.headColor]
+        trailAttrs = (0..<config.trailLen).map { j in
+            let t = CGFloat(j) / CGFloat(max(1, config.trailLen - 1))
+            return [.font: font, .foregroundColor: config.trailColor(at: t)]
         }
     }
 
     private func resetColumns() {
-        let n    = max(1, Int(bounds.width / fontSize))
-        let rows = Double(bounds.height / fontSize)
+        let sz   = CGFloat(config.fontSize)
+        let n    = max(1, Int(bounds.width / sz))
+        let rows = Double(bounds.height / sz)
         columns = (0..<n).map { _ in
             Column(y:          -Double.random(in: 0...max(1, rows)),
-                   speed:      minSpeed + Double.random(in: 0...(maxSpeed - minSpeed)),
-                   trailChars: (0..<trailLen).map { _ in randomChar() })
+                   speed:      config.minSpeed + Double.random(in: 0...(config.speed - config.minSpeed)),
+                   trailChars: (0..<config.trailLen).map { _ in randomChar() })
         }
     }
 
-    // MARK: – Drawing
-    // animateOneFrame is called by the screensaver framework (with lockFocus already held).
-    // draw(_:) is called by display() in the test app (also with lockFocus held).
-    // Both funnel into renderFrame().
-    public override func animateOneFrame() { renderFrame() }
+    // MARK: – Rendering
+    // animateOneFrame() calls display() so both paths go through draw(_:) → renderFrame(),
+    // which is the same route the test app uses (and is known to work).
+    public override func animateOneFrame() { display() }
     public override func draw(_ rect: NSRect) { renderFrame() }
 
     private func renderFrame() {
-        guard monoFont != nil else { buildResources(); return }
+        // Lazy init — startAnimation() may not be called on modern macOS
+        if monoFont == nil { buildResources() }
+        if columns.isEmpty { resetColumns() }
 
-        // Re-initialise columns if bounds changed (e.g. first real frame after launch)
-        let numCols = max(1, Int(bounds.width / fontSize))
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+
+        let sz      = CGFloat(config.fontSize)
+        let numCols = max(1, Int(bounds.width / sz))
         if columns.count != numCols { resetColumns() }
 
         // Clear to black
-        NSColor.black.setFill()
-        NSBezierPath.fill(bounds)
+        ctx.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
+        ctx.fill(bounds)
 
         for i in 0..<columns.count {
             guard columns[i].active else {
@@ -97,45 +97,40 @@ public class NeoMatrixView: ScreenSaverView {
                 if columns[i].pauseFor <= 0 {
                     columns[i].y          = 0
                     columns[i].active     = true
-                    columns[i].trailChars = (0..<trailLen).map { _ in randomChar() }
+                    columns[i].trailChars = (0..<config.trailLen).map { _ in randomChar() }
                 }
                 continue
             }
 
             let headRow = Int(columns[i].y)
-            let x       = CGFloat(i) * fontSize
+            let x       = CGFloat(i) * sz
+            let tLen    = min(config.trailLen, min(trailAttrs.count, columns[i].trailChars.count))
 
             // ── Trail ──────────────────────────────────────────────────────
-            for j in 0..<trailLen {
-                if Double.random(in: 0...1) < flickerChance {
+            for j in 0..<tLen {
+                if Double.random(in: 0...1) < config.flickerChance {
                     columns[i].trailChars[j] = randomChar()
                 }
-                let trailRow = headRow - (trailLen - j)
-                let py       = bounds.height - CGFloat(trailRow + 1) * fontSize
-                guard py >= -fontSize && py <= bounds.height else { continue }
-
+                let trailRow = headRow - (tLen - j)
+                let py       = bounds.height - CGFloat(trailRow + 1) * sz
+                guard py >= -sz && py <= bounds.height else { continue }
                 (String(columns[i].trailChars[j]) as NSString)
                     .draw(at: NSPoint(x: x, y: py), withAttributes: trailAttrs[j])
             }
 
-            // ── Head: white with green glow via NSShadow ───────────────────
-            let headY = bounds.height - CGFloat(headRow + 1) * fontSize
-            if headY >= -fontSize && headY <= bounds.height {
-                NSGraphicsContext.current?.saveGraphicsState()
-                let shadow = NSShadow()
-                shadow.shadowColor      = NSColor(red: 0, green: 1, blue: 0.25, alpha: 1)
-                shadow.shadowBlurRadius = 6
-                shadow.shadowOffset     = .zero
-                shadow.set()
+            // ── Head: white with glow ──────────────────────────────────────
+            let headY = bounds.height - CGFloat(headRow + 1) * sz
+            if headY >= -sz && headY <= bounds.height {
+                ctx.saveGState()
+                ctx.setShadow(offset: .zero, blur: 6, color: config.glowColor)
                 (String(randomChar()) as NSString)
                     .draw(at: NSPoint(x: x, y: headY), withAttributes: headAttrs)
-                NSGraphicsContext.current?.restoreGraphicsState()
+                ctx.restoreGState()
             }
 
             // ── Advance ────────────────────────────────────────────────────
             columns[i].y += columns[i].speed
-
-            if CGFloat(headRow) * fontSize > bounds.height + CGFloat(trailLen) * fontSize {
+            if CGFloat(headRow) * sz > bounds.height + CGFloat(config.trailLen) * sz {
                 columns[i].active   = false
                 columns[i].pauseFor = Int.random(in: 20...80)
             }
@@ -143,10 +138,14 @@ public class NeoMatrixView: ScreenSaverView {
     }
 
     private func randomChar() -> Character {
-        Self.alphabet[Int.random(in: 0..<Self.alphabet.count)]
+        alphabet.isEmpty ? "0" : alphabet[Int.random(in: 0..<alphabet.count)]
     }
 
-    // MARK: – ScreenSaverView
-    public override var hasConfigureSheet: Bool { false }
-    public override var configureSheet: NSWindow? { nil }
+    // MARK: – ScreenSaverView config sheet
+    public override var hasConfigureSheet: Bool { true }
+    public override var configureSheet: NSWindow? {
+        if sheet == nil { sheet = NeoMatrixConfigSheet(for: self) }
+        sheet!.prepareToShow()
+        return sheet!.panel
+    }
 }

@@ -23,6 +23,9 @@ swiftc \
     -framework ScreenSaver \
     -framework Cocoa \
     -Xlinker -bundle \
+    -Xlinker -no_adhoc_codesign \
+    "$SCRIPT_DIR/Sources/NeoMatrixConfig.swift" \
+    "$SCRIPT_DIR/Sources/NeoMatrixConfigSheet.swift" \
     "$SCRIPT_DIR/Sources/NeoMatrixView.swift" \
     -o "$SAVER_BUNDLE/Contents/MacOS/$SAVER_NAME"
 
@@ -31,10 +34,9 @@ echo "==> Copying resources..."
 ditto "$SCRIPT_DIR/Info.plist" "$SAVER_BUNDLE/Contents/Info.plist"
 
 echo "==> Signing..."
-# Strip extended attributes the compiler leaves behind
-xattr -cr "$SAVER_BUNDLE"
-xattr -c  "$SAVER_BUNDLE/Contents/MacOS/$SAVER_NAME"
+xattr -cr "$SAVER_BUNDLE" 2>/dev/null || true
 codesign --force --sign - "$SAVER_BUNDLE/Contents/MacOS/$SAVER_NAME"
+xattr -cr "$SAVER_BUNDLE" 2>/dev/null || true
 codesign --force --sign - "$SAVER_BUNDLE"
 
 echo "==> Installing to ~/Library/Screen Savers/..."

@@ -23,8 +23,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         saverView.startAnimation()
 
-        // display() internally calls lockFocus → draw → unlockFocus,
-        // which gives animateOneFrame a valid graphics context.
+        // display() → draw(_:) → renderFrame(), all with a valid graphics context
         Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { [weak saverView] _ in
             saverView?.display()
         }
