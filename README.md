@@ -1,10 +1,16 @@
-# neo-matrix-rain
+# Neo Matrix Rain
 
-A macOS screensaver showing the classic Matrix digital rain — falling katakana, Cyrillic and digit characters on a black background with a green gradient trail.
+A macOS screensaver showing the classic digital rain — falling katakana, Cyrillic and digit characters on a black background with a green gradient trail.
 
-Built with Swift and CoreGraphics. No dependencies, no web views.
+Built with Swift and CoreGraphics. No dependencies, no web views. Runs natively on Apple Silicon and Intel.
 
 ![Neo Matrix Rain screensaver](screenshot.png)
+
+[![Ko-fi](https://img.shields.io/badge/Support%20this%20project-Ko--fi-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/anatoliypivovarov)
+
+If you enjoy this screensaver, consider buying me a coffee ☕ — it keeps the project alive and motivates new features.
+
+---
 
 ## Requirements
 
@@ -56,6 +62,20 @@ The rain draws randomly from:
 - **Cyrillic** — Unicode block U+0400–U+04FF
 - **Digits** — 0–9
 
+## Roadmap
+
+- [ ] Settings UI — adjust speed, density, colors without editing code
+- [ ] Color themes — green, blue, red, white, custom RGB
+- [ ] Custom character sets — add your own symbols
+- [ ] Multi-monitor support
+- [ ] macOS Sonoma / Sequoia optimizations
+
+Have a feature idea? [Open an issue](https://github.com/pivovarovanatol/neo-matrix-rain/issues) or support development on [Ko-fi](https://ko-fi.com/anatoliypivovarov).
+
 ## License
 
 MIT
+
+---
+
+> **Disclaimer:** "The Matrix" is a trademark of Warner Bros. Entertainment Inc. This project is an independent open-source implementation of a digital rain animation effect and is not affiliated with, endorsed by, or connected to Warner Bros. or the Matrix franchise in any way.
