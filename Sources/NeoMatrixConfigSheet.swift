@@ -21,6 +21,7 @@ final class NeoMatrixConfigSheet: NSObject {
     private var colorSeg:     NSSegmentedControl!
     private var katCheck:     NSButton!
     private var cyrCheck:     NSButton!
+    private var chiCheck:     NSButton!
     private var digCheck:     NSButton!
 
     // MARK: – Init
@@ -126,9 +127,15 @@ final class NeoMatrixConfigSheet: NSObject {
         cyr.state = pending.useCyrillic ? .on : .off
         root.addSubview(cyr); cyrCheck = cyr
 
+        let chi = NSButton(checkboxWithTitle: "Chinese", target: self,
+                           action: #selector(charToggled(_:)))
+        chi.frame = NSRect(x: 250, y: 57, width: 100, height: 24); chi.tag = 13
+        chi.state = pending.useChinese ? .on : .off
+        root.addSubview(chi); chiCheck = chi
+
         let dig = NSButton(checkboxWithTitle: "Digits", target: self,
                            action: #selector(charToggled(_:)))
-        dig.frame = NSRect(x: 250, y: 57, width: 100, height: 24); dig.tag = 12
+        dig.frame = NSRect(x: 360, y: 57, width: 100, height: 24); dig.tag = 12
         dig.state = pending.useDigits ? .on : .off
         root.addSubview(dig); digCheck = dig
 
@@ -161,6 +168,7 @@ final class NeoMatrixConfigSheet: NSObject {
         colorSeg.selectedSegment = pending.colorScheme
         katCheck.state = pending.useKatakana ? .on : .off
         cyrCheck.state = pending.useCyrillic ? .on : .off
+        chiCheck.state = pending.useChinese  ? .on : .off
         digCheck.state = pending.useDigits   ? .on : .off
     }
 
@@ -196,10 +204,11 @@ final class NeoMatrixConfigSheet: NSObject {
         case 10: pending.useKatakana = (btn.state == .on)
         case 11: pending.useCyrillic = (btn.state == .on)
         case 12: pending.useDigits   = (btn.state == .on)
+        case 13: pending.useChinese  = (btn.state == .on)
         default: break
         }
         // Always keep at least one set enabled
-        if !pending.useKatakana && !pending.useCyrillic && !pending.useDigits {
+        if !pending.useKatakana && !pending.useCyrillic && !pending.useChinese && !pending.useDigits {
             pending.useDigits = true
             digCheck.state = .on
         }

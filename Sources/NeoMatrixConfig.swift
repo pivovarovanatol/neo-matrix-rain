@@ -13,6 +13,7 @@ struct NeoMatrixConfig {
     var colorScheme:   Int    = 0      // 0 green  1 blue  2 red  3 white
     var useKatakana:   Bool   = true
     var useCyrillic:   Bool   = true
+    var useChinese:    Bool   = true
     var useDigits:     Bool   = true
 
     // MARK: – Persistence
@@ -24,7 +25,7 @@ struct NeoMatrixConfig {
         d.register(defaults: [
             "speed": 0.35, "minSpeedPct": 0.30, "fontSize": 22.0, "trailLen": 24,
             "flickerChance": 0.01, "colorScheme": 0,
-            "useKatakana": true, "useCyrillic": true, "useDigits": true,
+            "useKatakana": true, "useCyrillic": true, "useChinese": true, "useDigits": true,
         ])
         var c = NeoMatrixConfig()
         c.speed         = d.double(forKey: "speed")
@@ -35,6 +36,7 @@ struct NeoMatrixConfig {
         c.colorScheme   = d.integer(forKey: "colorScheme")
         c.useKatakana   = d.bool(forKey: "useKatakana")
         c.useCyrillic   = d.bool(forKey: "useCyrillic")
+        c.useChinese    = d.bool(forKey: "useChinese")
         c.useDigits     = d.bool(forKey: "useDigits")
         return c
     }
@@ -49,6 +51,7 @@ struct NeoMatrixConfig {
         d.set(colorScheme,   forKey: "colorScheme")
         d.set(useKatakana,   forKey: "useKatakana")
         d.set(useCyrillic,   forKey: "useCyrillic")
+        d.set(useChinese,    forKey: "useChinese")
         d.set(useDigits,     forKey: "useDigits")
         d.synchronize()
     }
@@ -61,6 +64,8 @@ struct NeoMatrixConfig {
         var chars: [Character] = []
         if useKatakana { chars += (0x30A0...0x30FF).compactMap { Unicode.Scalar($0).map(Character.init) } }
         if useCyrillic { chars += (0x0400...0x04FF).compactMap { Unicode.Scalar($0).map(Character.init) } }
+        // CJK Unified Ideographs – a curated range of common characters (避免罕见字形渲染问题)
+        if useChinese  { chars += (0x4E00...0x9FFF).compactMap { Unicode.Scalar($0).map(Character.init) } }
         if useDigits   { chars += Array("0123456789") }
         return chars.isEmpty ? Array("01") : chars
     }
