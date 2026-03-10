@@ -1,0 +1,69 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build .saver
+        run: |
+          # Build without the install step
+          set -euo pipefail
+          BUILD_DIR="$GITHUB_WORKSPACE/build"
+          SAVER_NAME="NeoMatrixRain"
+          SAVER_BUNDLE="$BUILD_DIR/$SAVER_NAME.saver"
+
+          rm -rf "$BUILD_DIR"
+          mkdir -p "$SAVER_BUNDLE/Contents/MacOS"
+
+          SDK="$(xcrun --sdk macosx --show-sdk-path)"
+          ARCH="$(uname -m)"
+          TARGET="${ARCH}-apple-macos12.0"
+
+          swiftc \
+            -parse-as-library \
+            -module-name "$SAVER_NAME" \
+            -target "$TARGET" \
+            -sdk "$SDK" \
+            -framework ScreenSaver \
+            -framework Cocoa \
+            -Xlinker -bundle \
+            -Xlinker -no_adhoc_codesign \
+            Sources/NeoMatrixConfig.swift \
+            Sources/NeoMatrixConfigSheet.swift \
+            Sources/NeoMatrixView.swift \
+            -o "$SAVER_BUNDLE/Contents/MacOS/$SAVER_NAME"
+
+          ditto Info.plist "$SAVER_BUNDLE/Contents/Info.plist"
+
+          xattr -cr "$SAVER_BUNDLE" 2>/dev/null || true
+          codesign --force --sign - "$SAVER_BUNDLE/Contents/MacOS/$SAVER_NAME"
+          xattr -cr "$SAVER_BUNDLE" 2>/dev/null || true
+          codesign --force --sign - "$SAVER_BUNDLE"
+
+      - name: Zip .saver
+        run: |
+          cd build
+          zip -r NeoMatrixRain.zip NeoMatrixRain.saver
+          echo "Built: $(ls -lh NeoMatrixRain.zip)"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NeoMatrixRain
+          path: build/NeoMatrixRain.zip
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/NeoMatrixRain.zip
+          generate_release_notes: true
