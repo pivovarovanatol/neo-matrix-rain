@@ -1,8 +1,10 @@
 # Neo Matrix Rain
 
-A macOS screensaver showing the classic digital rain — falling katakana, Cyrillic and digit characters on a black background with a green gradient trail.
+Not a utility. Not a tool. Just something beautiful to look at.
 
-Built with Swift and CoreGraphics. No dependencies, no web views. Runs natively on Apple Silicon and Intel.
+Digital rain — falling katakana, Cyrillic, Chinese and digit characters cascading on black, with a glowing green trail. The kind of thing you glance at from across the room and feel something. Like leaving a window open, or hanging art on a wall.
+
+Built with Swift and CoreGraphics. No dependencies, no web views, no Electron. Runs natively on Apple Silicon and Intel.
 
 ![Neo Matrix Rain screensaver](screenshot.png)
 
@@ -60,6 +62,7 @@ After editing, run `bash build.sh` to rebuild and reinstall.
 The rain draws randomly from:
 - **Katakana** — Unicode block U+30A0–U+30FF (the original Matrix look)
 - **Cyrillic** — Unicode block U+0400–U+04FF
+- **Chinese** — CJK Unified Ideographs U+4E00–U+9FFF
 - **Digits** — 0–9
 
 ## Roadmap
