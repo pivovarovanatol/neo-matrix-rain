@@ -17,17 +17,27 @@ If you enjoy this screensaver, consider buying me a coffee ☕ — it keeps the 
 ## Requirements
 
 - macOS 12 or later (Apple Silicon and Intel)
-- Xcode Command Line Tools (`xcode-select --install`)
 
-## Install
+## Install (no Xcode required)
+
+1. Download **NeoMatrixRain.zip** from the [latest release](https://github.com/pivovarovanatol/neo-matrix-rain/releases/latest)
+2. Unzip and double-click **NeoMatrixRain.saver**
+3. macOS will show a security warning — click **Done**
+4. Go to **System Settings → Privacy & Security** → scroll down → click **Open Anyway**
+5. Double-click the `.saver` file again → **Install**
+6. Open **System Settings → Screen Saver** and select **Neo Matrix Rain**
+
+> This warning appears because the app is not notarized via Apple's paid Developer Program. It is safe — source code is fully open and auditable above.
+
+## Install (build from source)
+
+Requires Xcode Command Line Tools (`xcode-select --install`).
 
 ```bash
 bash build.sh
 ```
 
 Then open **System Settings → Screen Saver** and select **Neo Matrix Rain**.
-
-If macOS shows a security warning, go to **System Settings → Privacy & Security → scroll down → Open Anyway**.
 
 ## Preview before installing
 
